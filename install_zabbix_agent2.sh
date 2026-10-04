@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala Zabbix Agent 2 en Debian
+# Instala Zabbix Agent 2 en Debian y Ubuntu
 # Uso: sudo ./install_zabbix_agent2.sh <IP_SERVIDOR_ZABBIX> [VERSION_ZABBIX]
 # Ejemplo: sudo ./install_zabbix_agent2.sh 192.168.1.10 7.0
 
@@ -19,24 +19,33 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Versión de Debian (11, 12, 13...)
+# Detección de distribución y versión
 . /etc/os-release
-if [[ "${ID:-}" != "debian" ]]; then
-    echo "Este script es solo para Debian." >&2
-    exit 1
-fi
-DEB_VER="${VERSION_ID%%.*}"
+case "${ID:-}" in
+    debian)
+        DISTRO="debian"
+        DISTRO_VER="${VERSION_ID%%.*}"      # 11, 12, 13...
+        ;;
+    ubuntu)
+        DISTRO="ubuntu"
+        DISTRO_VER="${VERSION_ID}"          # 22.04, 24.04...
+        ;;
+    *)
+        echo "Distribución no soportada: ${ID:-desconocida}. Solo Debian y Ubuntu." >&2
+        exit 1
+        ;;
+esac
 
 HOSTNAME_LINUX="$(hostname)"
 
-echo "[*] Debian $DEB_VER | Zabbix $ZBX_VERSION | Servidor: $ZBX_SERVER | Hostname: $HOSTNAME_LINUX"
+echo "[*] ${DISTRO^} $DISTRO_VER | Zabbix $ZBX_VERSION | Servidor: $ZBX_SERVER | Hostname: $HOSTNAME_LINUX"
 
 # Repositorio oficial de Zabbix
 apt-get update -y
 apt-get install -y wget ca-certificates
 
-PKG="zabbix-release_latest_${ZBX_VERSION}+debian${DEB_VER}_all.deb"
-URL="https://repo.zabbix.com/zabbix/${ZBX_VERSION}/debian/pool/main/z/zabbix-release/${PKG}"
+PKG="zabbix-release_latest_${ZBX_VERSION}+${DISTRO}${DISTRO_VER}_all.deb"
+URL="https://repo.zabbix.com/zabbix/${ZBX_VERSION}/${DISTRO}/pool/main/z/zabbix-release/${PKG}"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
