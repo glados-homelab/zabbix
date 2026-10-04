@@ -53,12 +53,10 @@ cp -a "$CONF" "${CONF}.bak.$(date +%F_%H%M%S)"
 
 set_param() {
     local key="$1" value="$2"
-    if grep -qE "^[#[:space:]]*${key}=" "$CONF"; then
-        # Sustituye la primera aparición (comentada o no) y elimina duplicados activos
-        sed -i -E "0,/^[#[:space:]]*${key}=.*/s||${key}=${value}|" "$CONF"
-    else
-        echo "${key}=${value}" >> "$CONF"
-    fi
+    # Elimina cualquier línea activa del parámetro (valores por defecto incluidos)
+    sed -i -E "/^[[:space:]]*${key}[[:space:]]*=/d" "$CONF"
+    # Añade el valor nuevo
+    echo "${key}=${value}" >> "$CONF"
 }
 
 set_param "Server"       "$ZBX_SERVER"
